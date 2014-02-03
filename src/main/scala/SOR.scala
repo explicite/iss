@@ -6,7 +6,7 @@ import scala.collection.mutable.ArrayBuffer
  * Successive over-relaxation equation system solver
  *
  * @param A stiffness matrix
- * @param B load vector
+ * @param B loads vector
  *
  * @author Jan Paw
  *         Date: 2/1/14
@@ -16,7 +16,7 @@ case class SOR(A: Seq[Double], B: Seq[Double]) {
   var x2: ArrayBuffer[Double] = ArrayBuffer.fill(B.length)(0.0)
   var x3: ArrayBuffer[Double] = ArrayBuffer.fill(B.length)(0.0)
 
-  def apply(ω: Double): Seq[Double] = {
+  def apply(ω: Double): ArrayBuffer[Double] = {
     var strictLowerTriangular: Double = 0.0
     var strictUpperTriangular: Double = 0.0
 

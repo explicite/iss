@@ -3,20 +3,18 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * @param interRadius pipe inter radius [m]
  * @param outerRadius pipe outer radius [m]
- * @param α air convection heat transfer coefficient [W/m2*K]
+ * @param αAir air convection heat transfer coefficient [W/m2*K]
  * @param t begin temperature [K]
  * @param stops temperature stops(stop temperature[K], stop time[s])
  * @param c heat factor [J/kg*K]
  * @param ρ material density [kg/m3]
  * @param λ thermal conductivity [W/m*K]
- * @param non number of nodes
+ * @param numberOfNodes number of nodes
  *
  * @author Jan Paw
  *         Date: 2/2/14
  */
-case class MES(interRadius: Double, outerRadius: Double, α: Double, t: Double, stops: Seq[(Double, Double)], c: Double, ρ: Double, λ: Double, non: Int) {
-
-  val NumberOfElements: Int = non - 1
+case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Double, stops: Seq[(Double, Double)], c: Double, ρ: Double, λ: Double, numberOfNodes: Int) {
 
   //integration points in the local coordinate system
   val E: Seq[Double] = Seq(-0.5773502692, 0.5773502692)
@@ -32,26 +30,103 @@ case class MES(interRadius: Double, outerRadius: Double, α: Double, t: Double, 
 
   val tEnd: Double = stops.foldLeft(0.0)((acc, c) => acc + c._2)
 
-  val σRadius: Double = (outerRadius - interRadius) / (NumberOfElements - 1)
+  val numberOfElements: Int = numberOfNodes - 1
 
-  val σTime: Double = tEnd / numberOfIterations
+  val σRadius: Double = (outerRadius - interRadius) / (numberOfElements - 1)
 
   val numberOfIterations: Int = ((tEnd / (σRadius * σRadius) / (0.5 * (λ / (c * ρ)))) + 1).toInt
 
-  val NodeCoordinates: Seq[Int] = List.range(0, NumberOfElements)
+  val σTime: Double = tEnd / numberOfIterations
 
-  var NodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(NumberOfElements)(t)
+  val coordinates: Seq[Int] = List.range(0, numberOfNodes)
+
+  var nodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(t)
+
+  var airTemp: Double = stops(0)._1
 
   //lower diagonal stiffness matrix
-  var aC: ArrayBuffer[Double] = ArrayBuffer.fill(NumberOfElements)(0.0)
+  var aC: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
   //diagonal stiffness matrix
-  var aD: ArrayBuffer[Double] = ArrayBuffer.fill(NumberOfElements)(0.0)
+  var aD: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
   //upper diagonal stiffness matrix
-  var aE: ArrayBuffer[Double] = ArrayBuffer.fill(NumberOfElements)(0.0)
+  var aE: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
   //load vector
-  var aB: ArrayBuffer[Double] = ArrayBuffer.fill(NumberOfElements)(0.0)
-  
+  var aB: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
+
+  def apply(): Seq[Double] = {
+    for (iteration <- 0 until numberOfIterations) {
+      aC = ArrayBuffer.fill(numberOfNodes)(0.0)
+      aD = ArrayBuffer.fill(numberOfNodes)(0.0)
+      aE = ArrayBuffer.fill(numberOfNodes)(0.0)
+      aB = ArrayBuffer.fill(numberOfNodes)(0.0)
+
+      //TODO heating stops should be used hear
+
+      for (element <- 0 until numberOfElements) {
+        val r: Seq[Double] = Seq(coordinates(element), coordinates(element + 1))
+        val temp: Seq[Double] = Seq(nodeTemperature(element), nodeTemperature(element + 1))
+
+        val σR: Double = r(1) - r(0)
+        var α: Double = 0.0
+        if (element == numberOfElements - 1) α = αAir
+
+        val H: ArrayBuffer[Double] = ArrayBuffer.fill(4)(0.0)
+
+        val P: ArrayBuffer[Double] = ArrayBuffer.fill(2)(0.0)
+
+        //First point
+        var Rp: Double = N1(0) * r(0) * N2(0) + r(1)
+        var TpTau: Double = N1(0) * temp(0) + N2(0) * temp(1)
+
+        H(0) += λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N1(0) * N1(0) / σTime
+        H(1) += -λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N1(0) * N2(0) / σTime
+        H(2) = H(1)
+        H(3) = λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N2(0) * N2(0) / σTime + 2 * α * outerRadius
+
+        P(0) += c * ρ * σR * TpTau * Rp * W(0) * N1(0) / σTime
+        P(1) += c * ρ * σR * TpTau * Rp * W(0) * N2(0) / σTime + 2 * α * outerRadius * airTemp
+
+        //Second point
+        Rp = N1(1) * r(0) * N2(1) + r(1)
+        TpTau = N1(1) * temp(0) + N2(1) * temp(1)
+
+        H(0) += λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N1(1) * N1(1) / σTime
+        H(1) += -λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N1(1) * N2(1) / σTime
+        H(2) = H(1)
+        H(3) += λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N2(1) * N2(1) / σTime + 2 * α * outerRadius
+
+        P(0) += c * ρ * σR * TpTau * Rp * W(1) * N1(1) / σTime
+        P(1) += c * ρ * σR * TpTau * Rp * W(1) * N2(1) / σTime + 2 * α * outerRadius * airTemp
+
+        aD(element) += H(0)
+        aD(element + 1) += H(3)
+        aE(element) += H(1)
+        aC(element + 1) += H(2)
+        aB(element) += P(0)
+        aB(element + 1) += P(1)
+      }
+
+      val stiffnessMatrix: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes*numberOfNodes)(0.0)
+      val loadsVector: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
+
+      for (i <- 0 until numberOfNodes) {
+        stiffnessMatrix(i + i * numberOfNodes) = aD(i)
+        loadsVector(i) = aB(i)
+      }
+
+      for (i <- 0 until (numberOfNodes - 1)) {
+        stiffnessMatrix(i + 1 + (i * numberOfNodes)) = aC(i + 1)
+        stiffnessMatrix(i + ((i + 1) * numberOfNodes)) = aE(i)
+      }
+
+      val equation = SOR(stiffnessMatrix, loadsVector)
+      nodeTemperature = equation(1.1)
+    }
+
+    nodeTemperature
+  }
+
 }
