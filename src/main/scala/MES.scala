@@ -32,13 +32,13 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
 
   val numberOfElements: Int = numberOfNodes - 1
 
-  val σRadius: Double = (outerRadius - interRadius) / (numberOfElements - 1)
+  val σRadius: Double = (outerRadius - interRadius) / numberOfElements
 
-  val numberOfIterations: Int = ((tEnd / (σRadius * σRadius) / (0.5 * (λ / (c * ρ)))) + 1).toInt
+  val numberOfIterations: Int = ((tEnd / ((σRadius * σRadius) / (0.5 * (λ / (c * ρ))))) + 1).toInt
 
   val σTime: Double = tEnd / numberOfIterations
 
-  val coordinates: Seq[Int] = List.range(0, numberOfNodes)
+  val coordinates: Seq[Double] = (0 until numberOfNodes).map(i => i * σRadius)
 
   var nodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(t)
 
@@ -57,6 +57,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
   var aB: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
   def apply(): Seq[Double] = {
+
     for (iteration <- 0 until numberOfIterations) {
       aC = ArrayBuffer.fill(numberOfNodes)(0.0)
       aD = ArrayBuffer.fill(numberOfNodes)(0.0)
@@ -78,7 +79,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         val P: ArrayBuffer[Double] = ArrayBuffer.fill(2)(0.0)
 
         //First point
-        var Rp: Double = N1(0) * r(0) * N2(0) + r(1)
+        var Rp: Double = N1(0) * r(0) + N2(0) * r(1)
         var TpTau: Double = N1(0) * temp(0) + N2(0) * temp(1)
 
         H(0) += λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N1(0) * N1(0) / σTime
@@ -109,7 +110,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         aB(element + 1) += P(1)
       }
 
-      val stiffnessMatrix: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes*numberOfNodes)(0.0)
+      val stiffnessMatrix: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes * numberOfNodes)(0.0)
       val loadsVector: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
       for (i <- 0 until numberOfNodes) {
