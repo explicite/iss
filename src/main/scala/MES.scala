@@ -1,4 +1,5 @@
 import scala.collection.mutable.ArrayBuffer
+import scala.math.abs
 
 /**
  * @param interRadius pipe inter radius [m]
@@ -56,7 +57,11 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
   //load vector
   var aB: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
-  def apply(): Seq[Double] = {
+  def apply(ω: Double): Seq[Double] = {
+
+    var σTemperature: Double = 0.0
+    var σMaxTemperature: Double = 0.0
+    var time: Double = 0.0
 
     for (iteration <- 0 until numberOfIterations) {
       aC = ArrayBuffer.fill(numberOfNodes)(0.0)
@@ -91,7 +96,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         P(1) += c * ρ * σR * TpTau * Rp * W(0) * N2(0) / σTime + 2 * α * outerRadius * airTemp
 
         //Second point
-        Rp = N1(1) * r(0) * N2(1) + r(1)
+        Rp = N1(1) * r(0) + N2(1) * r(1)
         TpTau = N1(1) * temp(0) + N2(1) * temp(1)
 
         H(0) += λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N1(1) * N1(1) / σTime
@@ -124,7 +129,13 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
       }
 
       val equation = SOR(stiffnessMatrix, loadsVector)
-      nodeTemperature = equation(1.1)
+      nodeTemperature = equation(ω)
+
+      σTemperature = abs(nodeTemperature(0) - nodeTemperature.last)
+      if (σTemperature > σMaxTemperature)
+        σMaxTemperature = σTemperature
+
+      time += σTime
     }
 
     nodeTemperature
