@@ -43,7 +43,9 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
 
   var nodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(t)
 
-  var airTemp: Double = stops(0)._1
+  var stop: (Double, Double) = stops(0)
+
+  var airTemp: Double = stop._1
 
   //lower diagonal stiffness matrix
   var aC: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
@@ -69,7 +71,10 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
       aE = ArrayBuffer.fill(numberOfNodes)(0.0)
       aB = ArrayBuffer.fill(numberOfNodes)(0.0)
 
-      //TODO heating stops should be used hear
+      if (stop._2 <= time)
+        stop = stops.find(_._2 >= time).getOrElse(stops.last)
+
+      airTemp = stop._1
 
       for (element <- 0 until numberOfElements) {
         val r: Seq[Double] = Seq(coordinates(element), coordinates(element + 1))
