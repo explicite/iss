@@ -57,7 +57,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
   //load vector
   var aB: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
-  def apply(ω: Double): Seq[Double] = {
+  def apply(ω: Double, ε: Double): Seq[Double] = {
 
     var σTemperature: Double = 0.0
     var σMaxTemperature: Double = 0.0
@@ -129,7 +129,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
       }
 
       val equation = SOR(stiffnessMatrix, loadsVector)
-      nodeTemperature = equation(ω)
+      nodeTemperature = equation(ω, ε)
 
       σTemperature = abs(nodeTemperature(0) - nodeTemperature.last)
       if (σTemperature > σMaxTemperature)
@@ -137,8 +137,6 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
 
       time += σTime
     }
-
     nodeTemperature
   }
-
 }
