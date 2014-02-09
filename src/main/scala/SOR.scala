@@ -17,8 +17,10 @@ case class SOR(A: Seq[Double], b: Seq[Double]) {
 
   /**
    * Resolve linear system
+   *
    * @param ω iteration factor [1,2] When ω, then become Gauss-Seidel method
    * @param ε accuracy rate
+   *
    * @return solution vector
    */
   def apply(ω: Double, ε: Double): ArrayBuffer[Double] = {

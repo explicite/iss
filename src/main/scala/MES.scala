@@ -29,23 +29,23 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
   //second shape function
   val N2: Seq[Double] = Seq(0.5 * (1.0 + E(0)), 0.5 * (1.0 + E(0)))
 
-  val tEnd: Double = stops.foldLeft(0.0)((acc, c) => acc + c._2)
+  val endTime: Double = stops.foldLeft(0.0)((acc, c) => acc + c._2)
 
   val numberOfElements: Int = numberOfNodes - 1
 
   val σRadius: Double = (outerRadius - interRadius) / numberOfElements
 
-  val numberOfIterations: Int = ((tEnd / ((σRadius * σRadius) / (0.5 * (λ / (c * ρ))))) + 1).toInt
+  val numberOfIterations: Int = ((endTime / ((σRadius * σRadius) / (0.5 * (λ / (c * ρ))))) + 1).toInt
 
-  val σTime: Double = tEnd / numberOfIterations
+  val σTime: Double = endTime / numberOfIterations
 
   val coordinates: Seq[Double] = (0 until numberOfNodes).map(i => i * σRadius)
 
   var nodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(t)
 
-  var stop: (Double, Double) = stops(0)
+  var temperatureStep: (Double, Double) = stops(0)
 
-  var airTemp: Double = stop._1
+  var airTemp: Double = temperatureStep._1
 
   //lower diagonal stiffness matrix
   var aC: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
@@ -59,6 +59,14 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
   //load vector
   var aB: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
+  /**
+   * Resolve simulation
+   *
+   * @param ω iteration factor [1,2] When ω, then become Gauss-Seidel method
+   * @param ε accuracy rate
+   *
+   * @return vector with temperature in nodes
+   */
   def apply(ω: Double, ε: Double): Seq[Double] = {
 
     var σTemperature: Double = 0.0
@@ -71,10 +79,10 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
       aE = ArrayBuffer.fill(numberOfNodes)(0.0)
       aB = ArrayBuffer.fill(numberOfNodes)(0.0)
 
-      if (stop._2 <= time)
-        stop = stops.find(_._2 >= time).getOrElse(stops.last)
+      if (temperatureStep._2 <= time)
+        temperatureStep = stops.find(_._2 >= time).getOrElse(stops.last)
 
-      airTemp = stop._1
+      airTemp = temperatureStep._1
 
       for (element <- 0 until numberOfElements) {
         val r: Seq[Double] = Seq(coordinates(element), coordinates(element + 1))
@@ -89,28 +97,28 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         val P: ArrayBuffer[Double] = ArrayBuffer.fill(2)(0.0)
 
         //First point
-        var Rp: Double = N1(0) * r(0) + N2(0) * r(1)
-        var TpTau: Double = N1(0) * temp(0) + N2(0) * temp(1)
+        var τRadius: Double = N1(0) * r(0) + N2(0) * r(1)
+        var τTemperature: Double = N1(0) * temp(0) + N2(0) * temp(1)
 
-        H(0) += λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N1(0) * N1(0) / σTime
-        H(1) += -λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N1(0) * N2(0) / σTime
+        H(0) += λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N1(0) * N1(0) / σTime
+        H(1) += -λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N1(0) * N2(0) / σTime
         H(2) = H(1)
-        H(3) = λ * Rp * W(0) / σR + c * ρ * σR * Rp * W(0) * N2(0) * N2(0) / σTime + 2 * α * outerRadius
+        H(3) = λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N2(0) * N2(0) / σTime + 2 * α * outerRadius
 
-        P(0) += c * ρ * σR * TpTau * Rp * W(0) * N1(0) / σTime
-        P(1) += c * ρ * σR * TpTau * Rp * W(0) * N2(0) / σTime + 2 * α * outerRadius * airTemp
+        P(0) += c * ρ * σR * τTemperature * τRadius * W(0) * N1(0) / σTime
+        P(1) += c * ρ * σR * τTemperature * τRadius * W(0) * N2(0) / σTime + 2 * α * outerRadius * airTemp
 
         //Second point
-        Rp = N1(1) * r(0) + N2(1) * r(1)
-        TpTau = N1(1) * temp(0) + N2(1) * temp(1)
+        τRadius = N1(1) * r(0) + N2(1) * r(1)
+        τTemperature = N1(1) * temp(0) + N2(1) * temp(1)
 
-        H(0) += λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N1(1) * N1(1) / σTime
-        H(1) += -λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N1(1) * N2(1) / σTime
+        H(0) += λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N1(1) * N1(1) / σTime
+        H(1) += -λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N1(1) * N2(1) / σTime
         H(2) = H(1)
-        H(3) += λ * Rp * W(1) / σR + c * ρ * σR * Rp * W(1) * N2(1) * N2(1) / σTime + 2 * α * outerRadius
+        H(3) += λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N2(1) * N2(1) / σTime + 2 * α * outerRadius
 
-        P(0) += c * ρ * σR * TpTau * Rp * W(1) * N1(1) / σTime
-        P(1) += c * ρ * σR * TpTau * Rp * W(1) * N2(1) / σTime + 2 * α * outerRadius * airTemp
+        P(0) += c * ρ * σR * τTemperature * τRadius * W(1) * N1(1) / σTime
+        P(1) += c * ρ * σR * τTemperature * τRadius * W(1) * N2(1) / σTime + 2 * α * outerRadius * airTemp
 
         aD(element) += H(0)
         aD(element + 1) += H(3)
@@ -133,8 +141,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         stiffnessMatrix(i + ((i + 1) * numberOfNodes)) = aE(i)
       }
 
-      val equation = SOR(stiffnessMatrix, loadsVector)
-      nodeTemperature = equation(ω, ε)
+      nodeTemperature = SOR(stiffnessMatrix, loadsVector)(ω, ε)
 
       σTemperature = abs(nodeTemperature(0) - nodeTemperature.last)
       if (σTemperature > σMaxTemperature)
@@ -142,6 +149,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
 
       time += σTime
     }
+
     nodeTemperature
   }
 }
