@@ -1,3 +1,4 @@
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.math.abs
 
@@ -67,11 +68,13 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
    *
    * @return vector with temperature in nodes
    */
-  def apply(ω: Double, ε: Double): Seq[Double] = {
+  def apply(ω: Double, ε: Double): mutable.Buffer[Seq[Double]] = {
 
     var σTemperature: Double = 0.0
     var σMaxTemperature: Double = 0.0
     var time: Double = 0.0
+
+    var data: mutable.Buffer[Seq[Double]] = mutable.Buffer.empty[Seq[Double]]
 
     for (iteration <- 0 until numberOfIterations) {
       aC = ArrayBuffer.fill(numberOfNodes)(0.0)
@@ -150,6 +153,6 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
       time += σTime
     }
 
-    nodeTemperature
+    data += nodeTemperature
   }
 }
