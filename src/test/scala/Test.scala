@@ -17,4 +17,12 @@ class Test extends FunSuite with ShouldMatchers {
       v => v should equal(v +- ε)
     }
   }
+
+  test("MES") {
+    val mes: MES = MES(0.0, 0.08, 300.0, 100.0, Seq((200, 1800), (1000, 3000)), 700, 7800, 25, 10)
+    val data = mes(ω, ε)
+    data(0) foreach {
+      v => println(v)
+    }
+  }
 }

@@ -151,8 +151,10 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         σMaxTemperature = σTemperature
 
       time += σTime
+
+      data ++= nodeTemperature :: Nil
     }
 
-    data += nodeTemperature
+    data
   }
 }

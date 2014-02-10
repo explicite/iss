@@ -1,9 +1,9 @@
-import scala.swing._
+import javax.swing.{UIManager, BorderFactory}
 import scala.swing.event.ButtonClicked
 import scala.swing.Orientation.Vertical
-import javax.swing.{BorderFactory, UIManager}
 import scalax.chart.Charting._
 import scalax.chart.XYChart
+import scala.swing._
 
 /**
  * @author Jan 
@@ -34,7 +34,7 @@ object App extends SwingApplication {
   val numberOfNodes: TextField = 50
   val numberOfNodesLabel: Label = "number of nodes"
 
-  val materialParameters = new GridPanel(8, 2) {
+  lazy val materialParameters = new GridPanel(8, 2) {
     contents ++= interRadius :: interRadiusLabel ::
       outerRadius :: outerRadiusLabel ::
       αAir :: αAirLabel ::
@@ -58,7 +58,7 @@ object App extends SwingApplication {
   val secondStopTime: TextField = 3000.0
   val secondStopTemperature: TextField = 1000.0
 
-  val stopsParameters = new GridPanel(2, 3) {
+  lazy val stopsParameters = new GridPanel(2, 3) {
     contents ++= firstStopLabel :: firstStopTemperature :: firstStopTime ::
       secondStopLabel :: secondStopTemperature :: secondStopTime :: Nil
 
@@ -68,13 +68,13 @@ object App extends SwingApplication {
     )
   }
 
-  val ε: TextField = 1.5
+  val ε: TextField = new TextField("1.5")
   val εLabel: Label = "ε"
 
-  val ω: TextField = 0.00001
+  val ω: TextField = new TextField("0.00001")
   val ωLabel: Label = "ω"
 
-  val SORParameters = new GridPanel(2, 2) {
+  lazy val SORParameters = new GridPanel(2, 2) {
     contents ++= ε :: εLabel :: ω :: ωLabel :: Nil
 
     border = BorderFactory.createCompoundBorder(
@@ -89,11 +89,15 @@ object App extends SwingApplication {
     contents ++= materialParameters :: stopsParameters :: SORParameters :: compute :: Nil
   }
 
+  val chartData = Seq((0, 0)).toXYSeriesCollection("default")
+
+  val chart: XYChart = XYDeviationChart(chartData, title = "temperature in points", domainAxisLabel = "temp", rangeAxisLabel = "x")
+
   val panel = new FlowPanel() {
-    contents ++= menu :: Nil
+    contents ++= menu :: chart.toPanel :: Nil
   }
 
-  val scrollPane = new ScrollPane(panel)
+  lazy val scrollPane = new ScrollPane(panel)
 
   def top = new MainFrame {
     title = "Heating the pipe"
@@ -113,8 +117,14 @@ object App extends SwingApplication {
           λ,
           numberOfNodes.toInt)
 
-        val data = mes(ω, ε)
+        val data = mes(ε, ω)
 
+        chartData.removeAllSeries()
+
+        //TODO add chart series
+        data(0) foreach {
+          v => println(v)
+        }
     }
   }
 
@@ -124,15 +134,8 @@ object App extends SwingApplication {
     horizontalAlignment = Alignment.Left
   }
 
-  implicit def TextField2Double(f: TextField): Double = f.text.toDouble
-
-  implicit def Double2TextField(d: Double): TextField = textField(d)
-
-  implicit def String2Label(s: String): Label = new Label(s)
-
-  override def startup(args: Array[String]): Unit = {
-    UIManager.setLookAndFeel(
-      UIManager.getSystemLookAndFeelClassName)
+  override def startup(args: Array[String]) {
+    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName)
     top.visible = true
   }
 
@@ -141,4 +144,11 @@ object App extends SwingApplication {
 
   def resourceFromUserDirectory(path: String): java.io.File =
     new java.io.File(util.Properties.userDir, path)
+
+  implicit def TextField2Double(f: TextField): Double = f.text.toDouble
+
+  implicit def Double2TextField(d: Double): TextField = textField(d)
+
+  implicit def String2Label(s: String): Label = new Label(s)
+
 }
