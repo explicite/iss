@@ -83,7 +83,7 @@ object App extends SwingApplication {
     )
   }
 
-  val compute = new Button("compute")
+  lazy val compute = new Button("compute")
 
   lazy val menu = new BoxPanel(Vertical) {
     contents ++= materialParameters :: stopsParameters :: SORParameters :: compute :: Nil
@@ -91,7 +91,7 @@ object App extends SwingApplication {
 
   val chartData = Seq((0, 0)).toXYSeriesCollection("default")
 
-  val chart: XYChart = XYDeviationChart(chartData, title = "temperature in points", domainAxisLabel = "temp", rangeAxisLabel = "x")
+  val chart: XYChart = XYLineChart(chartData, title = "temperature in points", domainAxisLabel = "temp", rangeAxisLabel = "x")
 
   val panel = new FlowPanel() {
     contents ++= menu :: chart.toPanel :: Nil
@@ -121,9 +121,9 @@ object App extends SwingApplication {
 
         chartData.removeAllSeries()
 
-        //TODO add chart series
-        data(0) foreach {
-          v => println(v)
+        for (z <- 0 until data.length) {
+          if (z % (data.length / 5) == 0)
+            chartData.addSeries((for (i <- 1 to data(z).length + 1) yield i).view.zip(data(z)).toXYSeries("step:" + z))
         }
     }
   }

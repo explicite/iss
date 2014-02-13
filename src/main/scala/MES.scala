@@ -93,6 +93,7 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
 
         val σR: Double = r(1) - r(0)
         var α: Double = 0.0
+        //TODO set α for inter radius
         if (element == numberOfElements - 1) α = αAir
 
         val H: ArrayBuffer[Double] = ArrayBuffer.fill(4)(0.0)
