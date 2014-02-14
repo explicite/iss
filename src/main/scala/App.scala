@@ -91,7 +91,7 @@ object App extends SwingApplication {
 
   val chartData = Seq((0, 0)).toXYSeriesCollection("default")
 
-  val chart: XYChart = XYLineChart(chartData, title = "temperature in points", domainAxisLabel = "temp", rangeAxisLabel = "x")
+  val chart: XYChart = XYLineChart(chartData, title = "temperature in points", domainAxisLabel = "time", rangeAxisLabel = "temperature")
 
   val panel = new FlowPanel() {
     contents ++= menu :: chart.toPanel :: Nil
@@ -118,13 +118,10 @@ object App extends SwingApplication {
           numberOfNodes.toInt)
 
         val data = mes(ε, ω)
-
+        
         chartData.removeAllSeries()
-
-        for (z <- 0 until data.length) {
-          if (z % (data.length / 5) == 0)
-            chartData.addSeries((for (i <- 1 to data(z).length + 1) yield i).view.zip(data(z)).toXYSeries("step:" + z))
-        }
+        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).head)).toXYSeries("head:"))//.view.zip(data.head).toXYSeries("step:"))
+        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).last)).toXYSeries("tail:"))
     }
   }
 
