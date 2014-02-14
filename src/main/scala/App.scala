@@ -11,16 +11,16 @@ import scala.swing._
  */
 object App extends SwingApplication {
   val interRadius: TextField = 0.0
-  val interRadiusLabel: Label = "inter radius [m]"
+  val interRadiusLabel: Label = "minimal radius [m]"
 
   val outerRadius: TextField = 0.08
-  val outerRadiusLabel: Label = "outer radius [m]"
+  val outerRadiusLabel: Label = "maximal radius [m]"
 
   val αAir: TextField = 300.0
   val αAirLabel: Label = "α air [W/m2*K]"
 
   val t: TextField = 100.0
-  val tLabel: Label = "begin temperature [K]"
+  val tLabel: Label = "begin temperature [°C]"
 
   val c: TextField = 700.0
   val cLabel: Label = "heat factor [J/kg*K]"
@@ -28,19 +28,23 @@ object App extends SwingApplication {
   val ρ: TextField = 7800.0
   val ρLabel: Label = "density [kg/m3]"
 
-  val λ: TextField = 25.0
+  val β: TextField = 12E-6
+  val βLabel: Label = "linear expansion [1/K]"
+
+  val λ: TextField = 58.0
   val λLabel: Label = "conductivity [W/m*K]"
 
   val numberOfNodes: TextField = 50
   val numberOfNodesLabel: Label = "number of nodes"
 
-  lazy val materialParameters = new GridPanel(8, 2) {
+  lazy val materialParameters = new GridPanel(9, 2) {
     contents ++= interRadius :: interRadiusLabel ::
       outerRadius :: outerRadiusLabel ::
       αAir :: αAirLabel ::
       t :: tLabel ::
       c :: cLabel ::
       ρ :: ρLabel ::
+      β :: βLabel ::
       λ :: λLabel ::
       numberOfNodes :: numberOfNodesLabel :: Nil
 
@@ -63,7 +67,7 @@ object App extends SwingApplication {
       secondStopLabel :: secondStopTemperature :: secondStopTime :: Nil
 
     border = BorderFactory.createCompoundBorder(
-      BorderFactory.createTitledBorder("Heating stops (temperature/time)"),
+      BorderFactory.createTitledBorder("Heating stops [°C]|[s]"),
       BorderFactory.createEmptyBorder(5, 5, 5, 5)
     )
   }
@@ -100,7 +104,7 @@ object App extends SwingApplication {
   lazy val scrollPane = new ScrollPane(panel)
 
   def top = new MainFrame {
-    title = "Heating the pipe"
+    title = "Cylinder heating"
     contents = scrollPane
 
     listenTo(compute)
@@ -114,14 +118,17 @@ object App extends SwingApplication {
           Seq((firstStopTemperature, firstStopTime), (secondStopTemperature, secondStopTime)),
           c,
           ρ,
+          β,
           λ,
           numberOfNodes.toInt)
 
         val data = mes(ε, ω)
-        
+
         chartData.removeAllSeries()
-        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).head)).toXYSeries("head:"))//.view.zip(data.head).toXYSeries("step:"))
-        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).last)).toXYSeries("tail:"))
+        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).head)).toXYSeries("inter"))
+        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i)(data(i).length / 2))).toXYSeries("middle"))
+        chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).last)).toXYSeries("outer"))
+
     }
   }
 

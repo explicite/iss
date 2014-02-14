@@ -3,20 +3,21 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math.abs
 
 /**
- * @param interRadius pipe inter radius [m]
- * @param outerRadius pipe outer radius [m]
+ * @param minimalRadius minimal radius of cylinder [m]
+ * @param maximalRadius maximal radius of cylinder [m]
  * @param αAir air convection heat transfer coefficient [W/m2*K]
- * @param t begin temperature [K]
- * @param stops temperature stops(stop temperature[K], stop time[s])
+ * @param t0 begin temperature [°C]
+ * @param stops temperature stops(stop temperature[°C], stop time[s])
  * @param c heat factor [J/kg*K]
- * @param ρ material density [kg/m3]
+ * @param ρ0 material density [kg/m3]
+ * @param β coefficient of linear expansion [1/K]
  * @param λ thermal conductivity [W/m*K]
  * @param numberOfNodes number of nodes
  *
  * @author Jan Paw
  *         Date: 2/2/14
  */
-case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Double, stops: Seq[(Double, Double)], c: Double, ρ: Double, λ: Double, numberOfNodes: Int) {
+case class MES(minimalRadius: Double, maximalRadius: Double, αAir: Double, t0: Double, stops: Seq[(Double, Double)], c: Double, ρ0: Double, β: Double, λ: Double, numberOfNodes: Int) {
 
   //integration points in the local coordinate system
   val E: Seq[Double] = Seq(-0.5773502692, 0.5773502692)
@@ -34,15 +35,15 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
 
   val numberOfElements: Int = numberOfNodes - 1
 
-  val σRadius: Double = (outerRadius - interRadius) / numberOfElements
+  val σRadius: Double = (maximalRadius - minimalRadius) / numberOfElements
 
-  val numberOfIterations: Int = ((endTime / ((σRadius * σRadius) / (0.5 * (λ / (c * ρ))))) + 1).toInt
+  val numberOfIterations: Int = ((endTime / ((σRadius * σRadius) / (0.5 * (λ / (c * ρ0))))) + 1).toInt
 
   val σTime: Double = endTime / numberOfIterations
 
   val coordinates: Seq[Double] = (0 until numberOfNodes).map(i => i * σRadius)
 
-  var nodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(t)
+  var nodeTemperature: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(t0)
 
   var temperatureStep: (Double, Double) = stops(0)
 
@@ -88,12 +89,14 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
       airTemp = temperatureStep._1
 
       for (element <- 0 until numberOfElements) {
+        val ρ: Double = ρ0 + ρ0 * (3 * β * (t0 - nodeTemperature(element)))
+
         val r: Seq[Double] = Seq(coordinates(element), coordinates(element + 1))
         val temp: Seq[Double] = Seq(nodeTemperature(element), nodeTemperature(element + 1))
 
         val σR: Double = r(1) - r(0)
         var α: Double = 0.0
-        //TODO set α for inter radius
+
         if (element == numberOfElements - 1) α = αAir
 
         val H: ArrayBuffer[Double] = ArrayBuffer.fill(4)(0.0)
@@ -107,10 +110,10 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         H(0) += λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N1(0) * N1(0) / σTime
         H(1) += -λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N1(0) * N2(0) / σTime
         H(2) = H(1)
-        H(3) = λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N2(0) * N2(0) / σTime + 2 * α * outerRadius
+        H(3) += λ * τRadius * W(0) / σR + c * ρ * σR * τRadius * W(0) * N2(0) * N2(0) / σTime + 2 * α * maximalRadius
 
         P(0) += c * ρ * σR * τTemperature * τRadius * W(0) * N1(0) / σTime
-        P(1) += c * ρ * σR * τTemperature * τRadius * W(0) * N2(0) / σTime + 2 * α * outerRadius * airTemp
+        P(1) += c * ρ * σR * τTemperature * τRadius * W(0) * N2(0) / σTime + 2 * α * maximalRadius * airTemp
 
         //Second point
         τRadius = N1(1) * r(0) + N2(1) * r(1)
@@ -119,10 +122,10 @@ case class MES(interRadius: Double, outerRadius: Double, αAir: Double, t: Doubl
         H(0) += λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N1(1) * N1(1) / σTime
         H(1) += -λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N1(1) * N2(1) / σTime
         H(2) = H(1)
-        H(3) += λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N2(1) * N2(1) / σTime + 2 * α * outerRadius
+        H(3) += λ * τRadius * W(1) / σR + c * ρ * σR * τRadius * W(1) * N2(1) * N2(1) / σTime + 2 * α * maximalRadius
 
         P(0) += c * ρ * σR * τTemperature * τRadius * W(1) * N1(1) / σTime
-        P(1) += c * ρ * σR * τTemperature * τRadius * W(1) * N2(1) / σTime + 2 * α * outerRadius * airTemp
+        P(1) += c * ρ * σR * τTemperature * τRadius * W(1) * N2(1) / σTime + 2 * α * maximalRadius * airTemp
 
         aD(element) += H(0)
         aD(element + 1) += H(3)
