@@ -1,5 +1,6 @@
 import javax.swing.{UIManager, BorderFactory}
-import scala.swing.event.ButtonClicked
+import scala.collection.mutable
+import scala.swing.event.{ValueChanged, ButtonClicked}
 import scala.swing.Orientation.Vertical
 import scalax.chart.Charting._
 import scalax.chart.XYChart
@@ -10,6 +11,8 @@ import scala.swing._
  *         Date: 2/9/14
  */
 object App extends SwingApplication {
+  var data = mutable.Buffer[Seq[Double]]()
+
   val interRadius: TextField = 0.0
   val interRadiusLabel: Label = "minimal radius [m]"
 
@@ -89,16 +92,26 @@ object App extends SwingApplication {
 
   lazy val compute = new Button("compute")
 
+  lazy val slider = new Slider
+
   lazy val menu = new BoxPanel(Vertical) {
-    contents ++= materialParameters :: stopsParameters :: SORParameters :: compute :: Nil
+    contents ++= materialParameters :: stopsParameters :: SORParameters :: compute :: slider :: Nil
   }
 
   val chartData = Seq((0, 0)).toXYSeriesCollection("default")
 
   val chart: XYChart = XYLineChart(chartData, title = "temperature in points", domainAxisLabel = "time", rangeAxisLabel = "temperature")
 
+  val canvas = new ConcentricCirclesCanvas {
+    preferredSize = new Dimension(200, 200)
+  }
+
+  val visualization = new BoxPanel(Vertical) {
+    contents ++= chart.toPanel :: canvas :: Nil
+  }
+
   val panel = new FlowPanel() {
-    contents ++= menu :: chart.toPanel :: Nil
+    contents ++= menu :: visualization :: Nil
   }
 
   lazy val scrollPane = new ScrollPane(panel)
@@ -108,6 +121,7 @@ object App extends SwingApplication {
     contents = scrollPane
 
     listenTo(compute)
+    listenTo(slider)
 
     reactions += {
       case ButtonClicked(`compute`) =>
@@ -122,13 +136,15 @@ object App extends SwingApplication {
           λ,
           numberOfNodes.toInt)
 
-        val data = mes(ε, ω)
+        data = mes(ε, ω)
 
         chartData.removeAllSeries()
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).head)).toXYSeries("inter"))
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i)(data(i).length / 2))).toXYSeries("middle"))
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).last)).toXYSeries("outer"))
 
+      case ValueChanged(`slider`) =>
+        canvas.paint(data(((slider.value / 100.0) * (data.length - 1)).toInt))
     }
   }
 
