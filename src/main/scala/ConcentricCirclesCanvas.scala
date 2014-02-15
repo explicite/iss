@@ -15,10 +15,12 @@ class ConcentricCirclesCanvas extends Component {
   override protected def paintComponent(g: _root_.scala.swing.Graphics2D) {
     g.clearRect(0, 0, size.width, size.height)
 
-    for (circle <- 0 until circles.length) {
+    val maxRadius = if (size.width > size.height) size.height else size.width
+
+    for (circle <- circles.length - 1 to 0 by -1) {
       g.setColor(circles(circle))
-      val radius: Int = (size.width / 2 * (circle.toDouble / circles.length.toDouble)).toInt
-      g.drawOval(size.width - radius, size.height - radius, radius * 2, radius * 2)
+      val radius: Int = (maxRadius * (circle.toDouble / circles.length.toDouble)).toInt
+      g.fillOval((size.width - radius) / 2, (size.height - radius) / 2, radius, radius)
     }
   }
 
