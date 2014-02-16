@@ -90,27 +90,41 @@ object App extends SwingApplication {
     )
   }
 
+  val timeLabel: Label = "0"
+
   lazy val compute = new Button("compute")
 
-  lazy val slider = new Slider
+  lazy val simulation = new GridPanel(1, 2) {
+    contents ++= timeLabel :: compute :: Nil
+
+    border = BorderFactory.createCompoundBorder(
+      BorderFactory.createTitledBorder("Simulation"),
+      BorderFactory.createEmptyBorder(5, 5, 5, 5)
+    )
+  }
+
+  lazy val slider = new Slider {
+    enabled = false
+    value = 0
+  }
 
   lazy val menu = new BoxPanel(Vertical) {
-    contents ++= materialParameters :: stopsParameters :: SORParameters :: compute :: slider :: Nil
+    contents ++= materialParameters :: stopsParameters :: SORParameters :: simulation :: slider :: Nil
   }
 
   val chartData = Seq((0, 0)).toXYSeriesCollection("default")
 
   val chart: XYChart = XYLineChart(chartData, title = "temperature in points", domainAxisLabel = "time", rangeAxisLabel = "temperature")
 
-  val canvas = new ConcentricCirclesCanvas {
-    preferredSize = new Dimension(200, 200)
+  val canvas = new TemperatureCanvas {
+    preferredSize = new Dimension(150, 250)
   }
 
   val visualization = new BoxPanel(Vertical) {
     contents ++= chart.toPanel :: canvas :: Nil
   }
 
-  val panel = new FlowPanel() {
+  lazy val panel = new FlowPanel() {
     contents ++= menu :: visualization :: Nil
   }
 
@@ -143,8 +157,12 @@ object App extends SwingApplication {
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i)(data(i).length / 2))).toXYSeries("middle"))
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).last)).toXYSeries("outer"))
 
+        canvas.draw(data(((slider.value / 100.0) * (data.length - 1)).toInt), mes.t0, mes.stops.last._1)
+        slider.enabled = true
+
       case ValueChanged(`slider`) =>
-        canvas.paint(data(((slider.value / 100.0) * (data.length - 1)).toInt))
+        canvas.redraw(data(((slider.value / 100.0) * (data.length - 1)).toInt))
+        timeLabel.text = ((slider.value / 100.0) * (data.length - 1)).toInt.toString
     }
   }
 
