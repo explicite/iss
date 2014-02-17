@@ -157,11 +157,11 @@ object App extends SwingApplication {
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i)(data(i).length / 2))).toXYSeries("middle"))
         chartData.addSeries((for (i <- 0 until data.length) yield (i, data(i).last)).toXYSeries("outer"))
 
-        canvas.draw(data(((slider.value / 100.0) * (data.length - 1)).toInt), mes.t0, mes.stops.last._1)
+        canvas.draw(data(((slider.value / 100.0) * (data.length - 1)).toInt))
         slider.enabled = true
 
       case ValueChanged(`slider`) =>
-        canvas.redraw(data(((slider.value / 100.0) * (data.length - 1)).toInt))
+        canvas.draw(data(((slider.value / 100.0) * (data.length - 1)).toInt))
         timeLabel.text = ((slider.value / 100.0) * (data.length - 1)).toInt.toString
     }
   }
