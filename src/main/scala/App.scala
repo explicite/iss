@@ -131,7 +131,7 @@ object App extends SwingApplication {
   lazy val scrollPane = new ScrollPane(panel)
 
   def top = new MainFrame {
-    title = "Cylinder heating"
+    title = "Heating transfer in cylinder"
     contents = scrollPane
 
     listenTo(compute)
