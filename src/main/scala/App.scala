@@ -7,7 +7,7 @@ import scalax.chart.XYChart
 import scala.swing._
 
 /**
- * @author Jan 
+ * @author Jan Paw
  *         Date: 2/9/14
  */
 object App extends SwingApplication {
@@ -139,7 +139,7 @@ object App extends SwingApplication {
 
     reactions += {
       case ButtonClicked(`compute`) =>
-        val mes = MES(interRadius,
+        val mes = FEM(interRadius,
           outerRadius,
           αAir,
           t,

@@ -3,6 +3,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math.abs
 
 /**
+ * Finite element method implementation for 1 dimensional heat transfer problems in cilinder
+ *
  * @param minimalRadius minimal radius of cylinder [m]
  * @param maximalRadius maximal radius of cylinder [m]
  * @param αAir air convection heat transfer coefficient [W/m2*K]
@@ -17,7 +19,7 @@ import scala.math.abs
  * @author Jan Paw
  *         Date: 2/2/14
  */
-case class MES(minimalRadius: Double, maximalRadius: Double, αAir: Double, t0: Double, stops: Seq[(Double, Double)], c: Double, ρ0: Double, β: Double, λ: Double, numberOfNodes: Int) {
+case class FEM(minimalRadius: Double, maximalRadius: Double, αAir: Double, t0: Double, stops: Seq[(Double, Double)], c: Double, ρ0: Double, β: Double, λ: Double, numberOfNodes: Int) {
 
   //integration points in the local coordinate system
   val E: Seq[Double] = Seq(-0.5773502692, 0.5773502692)
@@ -62,7 +64,7 @@ case class MES(minimalRadius: Double, maximalRadius: Double, αAir: Double, t0: 
   var aB: ArrayBuffer[Double] = ArrayBuffer.fill(numberOfNodes)(0.0)
 
   /**
-   * Resolve simulation
+   * Resolve simulation with SOR
    *
    * @param ω iteration factor [1,2] When ω, then become Gauss-Seidel method
    * @param ε accuracy rate

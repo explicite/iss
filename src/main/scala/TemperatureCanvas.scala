@@ -12,6 +12,11 @@ class TemperatureCanvas extends Component {
   override protected def paintComponent(g: _root_.scala.swing.Graphics2D) {
     g.clearRect(0, 0, size.width, size.height)
 
+    g.setRenderingHint(
+      RenderingHints.KEY_ANTIALIASING,
+      RenderingHints.VALUE_ANTIALIAS_ON
+    )
+
     val maxRadius = if (size.width > size.height) size.height else size.width
 
     for (h <- 0 until size.height) {
@@ -21,11 +26,6 @@ class TemperatureCanvas extends Component {
         g.drawString(s"${(((size.height - h.toDouble) / size.height.toDouble * (circles.max - circles.min)) + circles.min).toInt}[°C]", 30, h + 10)
       }
     }
-
-    g.setRenderingHint(
-      RenderingHints.KEY_ANTIALIASING,
-      RenderingHints.VALUE_ANTIALIAS_ON
-    )
 
     for (circle <- circles.length - 1 to 0 by -1) {
       g.setColor(circle)
