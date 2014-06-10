@@ -1,6 +1,5 @@
-import scala.math.sqrt
-import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
+import BLAS._
 
 /**
  * Successive over-relaxation equation system solver
@@ -25,18 +24,6 @@ case class SOR(A: Seq[Double], b: Seq[Double]) {
    */
   def apply(ω: Double, ε: Double): ArrayBuffer[Double] = {
     def convergence: Boolean = norm(subtract(x2, x1)) <= ε
-
-    def norm(v: Seq[Double]): Double = sqrt(v.par.foldLeft(0.0)((acc, c) => acc + (c * c)))
-
-    def subtract(v1: Seq[Double], v2: Seq[Double]): Seq[Double] = (v1, v2).zipped.map(_ - _)
-
-    def repeat(body: => Unit) = new {
-      @tailrec
-      def until(condition: => Boolean) {
-        body
-        if (condition) () else until(condition)
-      }
-    }
 
     repeat {
       x1 = x2.clone()

@@ -136,6 +136,8 @@ object App extends SwingApplication {
 
     listenTo(compute)
     listenTo(slider)
+    //TODO waiting to integrate https://github.com/wookietreiber/scala-chart/commit/736a9a918166e93fa66ee4195d27943bffb5375b
+    //listenTo(chart)
 
     reactions += {
       case ButtonClicked(`compute`) =>
