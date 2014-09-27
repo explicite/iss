@@ -2,15 +2,15 @@ import javax.swing.{UIManager, BorderFactory}
 import scala.collection.mutable
 import scala.swing.event.{ValueChanged, ButtonClicked}
 import scala.swing.Orientation.Vertical
-import scalax.chart.Charting._
 import scalax.chart.XYChart
 import scala.swing._
+import scalax.chart.module.Charting
 
 /**
  * @author Jan Paw
  *         Date: 2/9/14
  */
-object App extends SwingApplication {
+object App extends SwingApplication with Charting {
   var data = mutable.Buffer[Seq[Double]]()
 
   val interRadius: TextField = 0.0
@@ -37,7 +37,7 @@ object App extends SwingApplication {
   val λ: TextField = 58.0
   val λLabel: Label = "conductivity [W/m*K]"
 
-  val numberOfNodes: TextField = 50
+  val numberOfNodes: TextField = 50.0
   val numberOfNodesLabel: Label = "number of nodes"
 
   lazy val materialParameters = new GridPanel(9, 2) {
@@ -114,14 +114,14 @@ object App extends SwingApplication {
 
   val chartData = Seq((0, 0)).toXYSeriesCollection("default")
 
-  val chart: XYChart = XYLineChart(chartData, title = "temperature in points", domainAxisLabel = "time", rangeAxisLabel = "temperature")
+  val chart: XYChart = XYLineChart(chartData, title = "temperature in points")
 
   val canvas = new TemperatureCanvas {
     preferredSize = new Dimension(150, 250)
   }
 
   val visualization = new BoxPanel(Vertical) {
-    contents ++= chart.toPanel :: canvas :: Nil
+    contents ++= chart.toComponent :: canvas :: Nil
   }
 
   lazy val panel = new FlowPanel() {
@@ -145,7 +145,7 @@ object App extends SwingApplication {
           outerRadius,
           αAir,
           t,
-          Seq((firstStopTemperature, firstStopTime), (secondStopTemperature, secondStopTime)),
+          Seq((firstStopTemperature.text.toDouble, firstStopTime.text.toDouble), (secondStopTemperature.text.toDouble, secondStopTime.text.toDouble)),
           c,
           ρ,
           β,

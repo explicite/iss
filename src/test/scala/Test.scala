@@ -27,7 +27,7 @@ class Test extends FunSuite with ShouldMatchers {
   }
 
   test("FEM") {
-    val mes: FEM = FEM(0.0, 0.08, 300.0, 100.0, Seq((200, 1800), (1000, 3000)), 700, 7800, 12E-6, 25, 10)
+    val mes: FEM = FEM(0.0, 0.08, 300.0, 100.0, Seq((200d, 1800d), (1000d, 3000d)), 700, 7800, 12E-6, 25, 10)
     val data = mes(ω, ε)
     data(0) foreach {
       v => println(v)
